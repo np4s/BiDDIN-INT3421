@@ -1,7 +1,7 @@
 #modal: tva tv ta av t v a
 
 #!/usr/bin/env bash
-export CUDA_VISIBLE_DEVICES=3   
+# export CUDA_VISIBLE_DEVICES=3   
 
 EXP_NO="test"
 MODALS="tva"
@@ -26,5 +26,4 @@ python -u train.py \
 --modulation \
 --dropout 0.1 \
 --tau 1 \
---no-cuda \
 >> ${LOG_PATH}/${EXP_NO}.out 2>&1

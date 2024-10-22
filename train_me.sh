@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export CUDA_VISIBLE_DEVICES=1
+# export CUDA_VISIBLE_DEVICES=1
 
 EXP_NO="test"
 MODALS="av"
@@ -16,7 +16,6 @@ python -u train_bimodal.py \
 --data_dir "./data/MELD_features/MELD_features_raw1.pkl" \
 --name ${EXP_NO} \
 --modals ${MODALS} \
---tensorboard \
 --beta 0.8 \
 --gamma 0.05 \
 --lr 0.0001 \

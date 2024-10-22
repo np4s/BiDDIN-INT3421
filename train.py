@@ -357,17 +357,19 @@ if __name__ == '__main__':
         if args.modulation:
             modulation_init(model, train_loader, cuda)
 
+        all_train_loss = []
+        all_valid_loss = []
         for e in range(n_epochs):
             start_time = time.time()
-            train_loss, train_acc, _, _, _, train_fscore = train_or_eval_model(model, loss_function, train_loader, e, args, optimizer, True)
- 
+            train_loss, train_acc, _, _, _, train_fscore, train_loss = train_or_eval_model(model, loss_function, train_loader, e, args, optimizer, True)
+            all_train_loss.append(train_loss)
             end_time = time.time()
             train_time = round(end_time-start_time, 2)
 
             start_time = time.time()
             with torch.no_grad():
-                valid_loss, valid_acc, _, _, _, valid_fscore = train_or_eval_model(model, loss_function, valid_loader, e, args)
-            
+                valid_loss, valid_acc, _, _, _, valid_fscore, valid_loss = train_or_eval_model(model, loss_function, valid_loader, e, args)
+                all_valid_loss.append(valid_loss)
             end_time = time.time()
             valid_time = round(end_time-start_time, 2)
 
@@ -379,8 +381,8 @@ if __name__ == '__main__':
                 writer.add_scalar('train/fscore', train_fscore, e)
                 writer.add_scalar('train/loss', train_loss, e)
 
-            print('epoch: {}, train_loss: {}, train_acc: {}, train_fscore: {}, valid_loss: {}, valid_acc: {}, valid_fscore: {}, train_time: {} sec, valid_time: {} sec'. \
-                format(e + 1, train_loss, train_acc, train_fscore, valid_loss, valid_acc, valid_fscore, train_time, valid_time))
+            # print('epoch: {}, train_loss: {}, train_acc: {}, train_fscore: {}, valid_loss: {}, valid_acc: {}, valid_fscore: {}, train_time: {} sec, valid_time: {} sec'. \
+            #     format(e + 1, train_loss, train_acc, train_fscore, valid_loss, valid_acc, valid_fscore, train_time, valid_time))
 
             if best_fscore == None:
                 best_fscore = valid_fscore
@@ -398,6 +400,7 @@ if __name__ == '__main__':
 
         if args.tensorboard:
             writer.close()
+        print({'train': all_train_loss, 'valid': all_valid_loss})
         
     if args.test == True:
         model.load_state_dict(torch.load(args.load))
@@ -405,9 +408,9 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(os.path.join(args.output, args.dataset, args.modals, args.name+'.pth')))
     with torch.no_grad():
         test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = train_or_eval_model(model, loss_function, test_loader, args=args)
-
-    print('Test performance..')
-    print('Loss {} accuracy {}'.format(test_loss, test_acc))
-    print(classification_report(test_label, test_pred, target_names=target_names, sample_weight=test_mask, digits=4))
-    print(confusion_matrix(test_label, test_pred, sample_weight=test_mask))
+    
+    # print('Test performance..')
+    # print('Loss {} accuracy {}'.format(test_loss, test_acc))
+    # print(classification_report(test_label, test_pred, target_names=target_names, sample_weight=test_mask, digits=4))
+    # print(confusion_matrix(test_label, test_pred, sample_weight=test_mask))
 

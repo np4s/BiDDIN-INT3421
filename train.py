@@ -233,9 +233,9 @@ def train_or_eval_model(model, loss_function, dataloader, epoch=0, args=None, op
 
         el, ev, ea = get_uni_loss(
             model, log_prob, textf, qmask, umask, acouf, visuf, labels_)
-        uni_loss['t'].append(el.item() * masks[-1].sum())
-        uni_loss['v'].append(ev.item() * masks[-1].sum())
-        uni_loss['a'].append(ea.item() * masks[-1].sum())
+        uni_loss['t'].append(el.item())
+        uni_loss['v'].append(ev.item())
+        uni_loss['a'].append(ea.item())
 
         preds.append(torch.argmax(log_prob, 1).cpu().numpy())
         labels.append(labels_.cpu().numpy())
@@ -263,7 +263,7 @@ def train_or_eval_model(model, loss_function, dataloader, epoch=0, args=None, op
         return float('nan'), float('nan'), [], [], [], float('nan')
 
     for m in args.modals:
-        uni_loss[m] = round(np.sum(uni_loss[m]) / np.sum(masks), 4)
+        uni_loss[m] = round(np.sum(uni_loss[m]), 4)
     avg_loss = round(np.sum(losses) / np.sum(masks), 4)
     avg_accuracy = round(accuracy_score(
         labels, preds, sample_weight=masks) * 100, 2)
@@ -421,7 +421,7 @@ if __name__ == '__main__':
         counter = 0
         if args.modulation:
             modulation_init(model, train_loader, cuda)
-
+        all_uni_loss = {m: {"train": [], "valid": []} for m in args.modals}
         for e in range(n_epochs):
             start_time = time.time()
             train_loss, train_acc, _, _, _, train_fscore, train_uni_loss = train_or_eval_model(
@@ -437,6 +437,10 @@ if __name__ == '__main__':
 
             end_time = time.time()
             valid_time = round(end_time-start_time, 2)
+
+            for m in args.modals:
+                all_uni_loss[m]["train"].append(train_uni_loss[m])
+                all_uni_loss[m]["valid"].append(valid_uni_loss[m])
 
             if args.tensorboard:
                 writer.add_scalar('val/accuracy', valid_acc, e)
@@ -464,7 +468,7 @@ if __name__ == '__main__':
                 # if counter >= 10:
                 #     print("Early stopping")
                 #     break
-        print({"train": train_uni_loss, "valid": valid_uni_loss})
+        print(all_uni_loss)
         if args.tensorboard:
             writer.close()
 

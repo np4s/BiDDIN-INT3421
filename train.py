@@ -88,6 +88,8 @@ def get_penalty(tensor, rate):
 def get_uni_loss(model, all_prob, textf, qmask, umask, acouf, visuf, label):
     model.eval()
     with torch.no_grad():
+        loss_all = loss_function(all_prob, label, umask)
+        
         el_prob = model(torch.zeros_like(textf), visuf, acouf, qmask, umask)
         loss_el = loss_function(el_prob, label, umask)
 
@@ -96,6 +98,10 @@ def get_uni_loss(model, all_prob, textf, qmask, umask, acouf, visuf, label):
 
         ea_prob = model(textf, visuf, torch.zeros_like(acouf), qmask, umask)
         loss_ea = loss_function(ea_prob, label, umask)
+        
+        loss_el = loss_all - loss_el
+        loss_ev = loss_all - loss_ev
+        loss_ea = loss_all - loss_ea
     model.train()
     return loss_el, loss_ev, loss_ea
 

@@ -89,19 +89,22 @@ def get_uni_loss(model, all_prob, textf, qmask, umask, acouf, visuf, label):
     model.eval()
     with torch.no_grad():
         loss_all = loss_function(all_prob, label, umask)
-        
-        el_prob = model(torch.zeros_like(textf), visuf, acouf, qmask, umask)
+
+        # el_prob = model(torch.zeros_like(textf), visuf, acouf, qmask, umask)
+        el_prob = model(textf, torch.zeros_like(visuf),
+                        torch.zeros_like(acouf), qmask, umask)
         loss_el = loss_function(el_prob, label, umask)
 
-        ev_prob = model(textf, torch.zeros_like(visuf), acouf, qmask, umask)
+        # ev_prob = model(textf, torch.zeros_like(visuf), acouf, qmask, umask)
+        ev_prob = model(torch.zeros_like(textf), visuf,
+                        torch.zeros_like(acouf), qmask, umask)
         loss_ev = loss_function(ev_prob, label, umask)
 
-        ea_prob = model(textf, visuf, torch.zeros_like(acouf), qmask, umask)
+        # ea_prob = model(textf, visuf, torch.zeros_like(acouf), qmask, umask)
+        ea_prob = model(torch.zeros_like(textf),
+                        torch.zeros_like(visuf), acouf, qmask, umask)
         loss_ea = loss_function(ea_prob, label, umask)
-        
-        loss_el = loss_all - loss_el
-        loss_ev = loss_all - loss_ev
-        loss_ea = loss_all - loss_ea
+
     model.train()
     return loss_el, loss_ev, loss_ea
 
@@ -239,9 +242,9 @@ def train_or_eval_model(model, loss_function, dataloader, epoch=0, args=None, op
 
         el, ev, ea = get_uni_loss(
             model, log_prob, textf, qmask, umask, acouf, visuf, labels_)
-        uni_loss['t'].append(el.item())
-        uni_loss['v'].append(ev.item())
-        uni_loss['a'].append(ea.item())
+        uni_loss['t'].append(el.item() * masks[-1].sum())
+        uni_loss['v'].append(ev.item() * masks[-1].sum())
+        uni_loss['a'].append(ea.item() * masks[-1].sum())
 
         preds.append(torch.argmax(log_prob, 1).cpu().numpy())
         labels.append(labels_.cpu().numpy())
@@ -269,7 +272,7 @@ def train_or_eval_model(model, loss_function, dataloader, epoch=0, args=None, op
         return float('nan'), float('nan'), [], [], [], float('nan')
 
     for m in args.modals:
-        uni_loss[m] = round(np.sum(uni_loss[m]), 4)
+        uni_loss[m] = round(np.sum(uni_loss[m]) / np.sum(masks), 4)
     avg_loss = round(np.sum(losses) / np.sum(masks), 4)
     avg_accuracy = round(accuracy_score(
         labels, preds, sample_weight=masks) * 100, 2)
